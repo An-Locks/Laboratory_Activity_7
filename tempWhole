@@ -1,0 +1,799 @@
+import React, { useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Menu,
+  Users,
+  IdCard,
+  CalendarCheck,
+  Calculator,
+  Search as SearchIcon,
+  FileText,
+  Shield,
+  HelpCircle,
+  Settings,
+  ChevronRight,
+  UploadCloud,
+  Save,
+  Plus,
+  Edit,
+  Trash,
+  LogOut,
+} from "lucide-react";
+
+// 
+// Payroll UI – Modular React App (single-file)
+// Jam: Left navigation stays intact. Content switches per module.
+// Styling uses TailwindCSS (no external UI kit). Icons from lucide-react. Animations via framer-motion.
+// Orange accent: use classes like text-orange-600, bg-orange-500, ring-orange-500.
+//
+
+const modules = [
+  {
+    key: "dashboard",
+    label: "Dashboard",
+    icon: Menu,
+    color: "text-orange-600",
+  },
+  {
+    key: "userMgmt",
+    label: "User Mgmt & System",
+    icon: Users,
+    color: "text-orange-600",
+    sub: [
+      { key: "roles", label: "User & Roles" },
+      { key: "users", label: "Users" },
+      { key: "system", label: "System Maintenance" },
+    ],
+  },
+  {
+    key: "employees",
+    label: "Employee Reg & Maint",
+    icon: IdCard,
+    color: "text-orange-600",
+    sub: [
+      { key: "register", label: "Register Employee" },
+      { key: "list", label: "Employees" },
+    ],
+  },
+  {
+    key: "attendance",
+    label: "Attendance",
+    icon: CalendarCheck,
+    color: "text-orange-600",
+    sub: [
+      { key: "import", label: "Import Biometric Logs" },
+      { key: "leave", label: "Leave / OT / OB" },
+      { key: "summary", label: "Generate Attendance Summary" },
+    ],
+  },
+  {
+    key: "payroll",
+    label: "Payroll",
+    icon: Calculator,
+    color: "text-orange-600",
+    sub: [
+      { key: "rates", label: "Pay Rates by Role" },
+      { key: "run", label: "Run Payroll" },
+      { key: "adjust", label: "Adjustments" },
+      { key: "earnDed", label: "Earnings & Deductions" },
+    ],
+  },
+  { key: "search", label: "Search", icon: SearchIcon, color: "text-orange-600" },
+  {
+    key: "reports",
+    label: "Reports",
+    icon: FileText,
+    color: "text-orange-600",
+    sub: [
+      { key: "genReports", label: "Generate Reports" },
+      { key: "payslips", label: "Payslips" },
+    ],
+  },
+  {
+    key: "security",
+    label: "Security",
+    icon: Shield,
+    color: "text-orange-600",
+    sub: [
+      { key: "changePwd", label: "Change Own Password" },
+      { key: "adminReset", label: "Admin-Assisted Reset" },
+    ],
+  },
+  { key: "help", label: "Help", icon: HelpCircle, color: "text-orange-600" },
+];
+
+function Sidebar({ current, setCurrent, currentSub, setCurrentSub }) {
+  return (
+    <aside className="h-full w-72 shrink-0 border-r bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+      <div className="px-5 py-4 border-b">
+        <h1 className="text-xl font-bold tracking-tight">RMB Payroll</h1>
+        <p className="text-xs text-neutral-600">LAN‑based • Module View</p>
+      </div>
+
+      <nav className="p-3 space-y-1 overflow-y-auto h-[calc(100%-80px)]">
+        {modules.map((m) => {
+          const ActiveIcon = m.icon;
+          const isActive = current === m.key;
+          return (
+            <div key={m.key}>
+              <button
+                onClick={() => {
+                  setCurrent(m.key);
+                  setCurrentSub(m?.sub?.[0]?.key || null);
+                }}
+                className={`group w-full flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition hover:bg-neutral-100 ${
+                  isActive ? "bg-neutral-100 ring-1 ring-orange-500/30" : ""
+                }`}
+              >
+                <ActiveIcon className={`h-4 w-4 ${m.color}`} />
+                <span className="flex-1 text-left">{m.label}</span>
+                {m.sub && (
+                  <ChevronRight
+                    className={`h-4 w-4 transition ${isActive ? "rotate-90" : ""}`}
+                  />
+                )}
+              </button>
+
+              {/* Sub-menu */}
+              <AnimatePresence initial={false}>
+                {m.sub && current === m.key && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="ml-9 mt-1 space-y-1"
+                  >
+                    {m.sub.map((s) => (
+                      <button
+                        key={s.key}
+                        onClick={() => setCurrentSub(s.key)}
+                        className={`w-full text-left text-[13px] rounded-lg px-2 py-1 hover:bg-neutral-100 ${
+                          currentSub === s.key ? "bg-neutral-100 ring-1 ring-orange-500/20" : ""
+                        }`}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })}
+      </nav>
+    </aside>
+  );
+}
+
+function Toolbar() {
+  return (
+    <div className="flex items-center justify-between px-6 py-3 border-b bg-white/70">
+      <div className="flex items-center gap-2 text-xs text-neutral-600">
+        <span className="inline-flex h-2 w-2 rounded-full bg-orange-500" />
+        <span>Connected: LAN</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <button className="text-xs px-3 py-1.5 rounded-lg border hover:bg-neutral-50">Settings</button>
+        <button className="text-xs px-3 py-1.5 rounded-lg border text-red-600 hover:bg-red-50 flex items-center gap-1">
+          <LogOut className="h-3.5 w-3.5" /> Logout
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SectionHeader({ title, subtitle, actions }) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <div>
+        <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
+        {subtitle && <p className="text-sm text-neutral-600 mt-0.5">{subtitle}</p>}
+      </div>
+      {actions}
+    </div>
+  );
+}
+
+function Card({ children, className = "" }) {
+  return (
+    <div className={`rounded-2xl border bg-white p-5 shadow-sm ${className}`}>{children}</div>
+  );
+}
+
+function Field({ label, children }) {
+  return (
+    <label className="text-sm w-full">
+      <span className="block mb-1 text-neutral-700">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function Input({ placeholder, type = "text", defaultValue = "", className = "" }) {
+  return (
+    <input
+      type={type}
+      placeholder={placeholder}
+      defaultValue={defaultValue}
+      className={`w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50 ${className}`}
+    />
+  );
+}
+
+function Select({ options, defaultValue }) {
+  return (
+    <select className="w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50">
+      {options.map((o) => (
+        <option key={o} selected={o === defaultValue}>
+          {o}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function Table({ columns, rows }) {
+  return (
+    <div className="overflow-auto rounded-2xl border">
+      <table className="min-w-full text-sm">
+        <thead className="bg-neutral-50">
+          <tr>
+            {columns.map((c) => (
+              <th key={c} className="px-3 py-2 text-left font-medium text-neutral-700">
+                {c}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, idx) => (
+            <tr key={idx} className="border-t">
+              {r.map((cell, i) => (
+                <td key={i} className="px-3 py-2">
+                  {cell}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function Empty({ title = "No data yet", hint = "Start by adding a new record." }) {
+  return (
+    <div className="flex flex-col items-center justify-center text-center border rounded-2xl p-10 bg-neutral-50/60">
+      <div className="h-12 w-12 rounded-full grid place-items-center bg-white border mb-3">
+        <Plus className="h-5 w-5 text-orange-600" />
+      </div>
+      <p className="font-medium">{title}</p>
+      <p className="text-sm text-neutral-600">{hint}</p>
+    </div>
+  );
+}
+
+// --- Module Screens -------------------------------------------------------
+
+function Dashboard() {
+  return (
+    <div className="space-y-4">
+      <SectionHeader
+        title="Dashboard"
+        subtitle="Quick stats and shortcuts to common actions."
+        actions={
+          <button className="px-3 py-2 text-sm rounded-xl bg-orange-500 text-white hover:bg-orange-600">
+            New Employee
+          </button>
+        }
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <p className="text-sm text-neutral-600">Total Employees</p>
+          <p className="mt-2 text-3xl font-bold">92</p>
+        </Card>
+        <Card>
+          <p className="text-sm text-neutral-600">Pending Leaves</p>
+          <p className="mt-2 text-3xl font-bold">5</p>
+        </Card>
+        <Card>
+          <p className="text-sm text-neutral-600">Last Payroll</p>
+          <p className="mt-2 text-3xl font-bold">Oct 15, 2025</p>
+        </Card>
+      </div>
+
+      <Card>
+        <p className="font-medium mb-3">Shortcuts</p>
+        <div className="flex flex-wrap gap-2">
+          {[
+            "Register Employee",
+            "Import Biometric",
+            "Run Payroll",
+            "Generate Payslips",
+          ].map((x) => (
+            <button
+              key={x}
+              className="text-xs px-3 py-1.5 rounded-full border hover:bg-neutral-50"
+            >
+              {x}
+            </button>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function UserMgmt({ sub }) {
+  if (sub === "roles") return <UserRoles />;
+  if (sub === "users") return <UsersList />;
+  return <SystemMaintenance />;
+}
+
+function UserRoles() {
+  return (
+    <div className="space-y-4">
+      <SectionHeader title="User & Roles" subtitle="Create roles and assign granular permissions." actions={<AddButton />} />
+      <Card>
+        <Table
+          columns={["Role", "Modules", "Actions"]}
+          rows={[
+            [
+              "Admin",
+              <span key="m">All modules</span>,
+              <RowActions key="a" />,
+            ],
+            ["HR Staff", "Employees, Attendance", <RowActions key="b" />],
+            ["Accounting", "Payroll, Reports", <RowActions key="c" />],
+          ]}
+        />
+      </Card>
+    </div>
+  );
+}
+
+function UsersList() {
+  return (
+    <div className="space-y-4">
+      <SectionHeader title="Users" subtitle="Manage accounts and access levels." actions={<AddButton />} />
+      <Card>
+        <div className="grid md:grid-cols-4 gap-3 mb-4">
+          <Field label="Search">
+            <Input placeholder="Name / email / role" />
+          </Field>
+          <Field label="Role Filter">
+            <Select options={["All", "Admin", "HR Staff", "Accounting"]} defaultValue="All" />
+          </Field>
+          <Field label="Status">
+            <Select options={["All", "Active", "Disabled"]} defaultValue="All" />
+          </Field>
+          <div className="flex items-end">
+            <button className="w-full rounded-xl px-3 py-2 border text-sm hover:bg-neutral-50">Apply</button>
+          </div>
+        </div>
+        <Table
+          columns={["Employee #", "Name", "Email", "Role", "Status", "Actions"]}
+          rows={[
+            ["E-001", "Santos, Ana", "ana@company.com", "HR Staff", "Active", <RowActions key="1" />],
+            ["E-002", "Dela Cruz, Ben", "ben@company.com", "Accounting", "Active", <RowActions key="2" />],
+            ["E-003", "Reyes, Cara", "cara@company.com", "Admin", "Disabled", <RowActions key="3" />],
+          ]}
+        />
+      </Card>
+    </div>
+  );
+}
+
+function SystemMaintenance() {
+  return (
+    <div className="space-y-4">
+      <SectionHeader title="System Maintenance" subtitle="Backup/restore and housekeeping." />
+      <div className="grid md:grid-cols-2 gap-4">
+        <Card>
+          <p className="font-medium">Backups</p>
+          <div className="mt-3 flex gap-2">
+            <button className="px-3 py-2 rounded-xl border text-sm flex items-center gap-2 hover:bg-neutral-50">
+              <UploadCloud className="h-4 w-4" /> Backup Now
+            </button>
+            <button className="px-3 py-2 rounded-xl border text-sm hover:bg-neutral-50">Restore…</button>
+          </div>
+        </Card>
+        <Card>
+          <p className="font-medium">Logs & Audit</p>
+          <div className="mt-3">
+            <Table columns={["When", "User", "Action"]} rows={[]} />
+            <div className="mt-3"><Empty title="No logs yet" hint="Events will appear here." /></div>
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function Employees({ sub }) {
+  if (sub === "register") return <EmployeeRegister />;
+  return <EmployeesList />;
+}
+
+function EmployeeRegister() {
+  return (
+    <div className="space-y-4">
+      <SectionHeader title="Register Employee" subtitle="Capture core profile and employment data." />
+      <Card>
+        <div className="grid md:grid-cols-3 gap-3">
+          <Field label="Employee #"><Input placeholder="Auto or manual" /></Field>
+          <Field label="Last Name"><Input placeholder="e.g., Dela Cruz" /></Field>
+          <Field label="First Name"><Input placeholder="e.g., Maria" /></Field>
+          <Field label="Middle Name"><Input /></Field>
+          <Field label="Role"><Select options={["Worker", "Foreman", "Accountant", "HR", "Admin"]} defaultValue="Worker" /></Field>
+          <Field label="Rate Type"><Select options={["Daily", "Monthly", "Hourly"]} defaultValue="Daily" /></Field>
+          <Field label="Base Rate (₱)"><Input type="number" placeholder="0.00" /></Field>
+          <Field label="Status"><Select options={["Active", "On Leave", "Resigned"]} defaultValue="Active" /></Field>
+        </div>
+        <div className="flex justify-end gap-2 mt-4">
+          <button className="px-3 py-2 rounded-xl border text-sm hover:bg-neutral-50">Cancel</button>
+          <button className="px-3 py-2 rounded-xl bg-orange-500 text-white text-sm hover:bg-orange-600 flex items-center gap-2">
+            <Save className="h-4 w-4" /> Save Employee
+          </button>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function EmployeesList() {
+  return (
+    <div className="space-y-4">
+      <SectionHeader title="Employees" subtitle="Search and manage employee records." actions={<AddButton label="New" />} />
+      <Card>
+        <div className="grid md:grid-cols-4 gap-3 mb-4">
+          <Field label="Quick Search"><Input placeholder="Name / employee #" /></Field>
+          <Field label="Role"><Select options={["All", "Worker", "Foreman", "Accountant", "HR", "Admin"]} defaultValue="All" /></Field>
+          <Field label="Status"><Select options={["All", "Active", "On Leave", "Resigned"]} defaultValue="All" /></Field>
+          <div className="flex items-end"><button className="w-full rounded-xl px-3 py-2 border text-sm hover:bg-neutral-50">Filter</button></div>
+        </div>
+        <Table
+          columns={["#", "Name", "Role", "Rate Type", "Base Rate", "Status", "Actions"]}
+          rows={[
+            ["E-010", "Garcia, Joel", "Worker", "Daily", "₱610.00", "Active", <RowActions key="a" />],
+            ["E-023", "Tan, Kim", "Foreman", "Monthly", "₱28,000.00", "Active", <RowActions key="b" />],
+          ]}
+        />
+      </Card>
+    </div>
+  );
+}
+
+function Attendance({ sub }) {
+  if (sub === "import") return <ImportBiometric />;
+  if (sub === "leave") return <LeaveOTOB />;
+  return <AttendanceSummary />;
+}
+
+function ImportBiometric() {
+  return (
+    <div className="space-y-4">
+      <SectionHeader title="Import Biometric Logs" subtitle="Upload logs from Deli device and map to employees." />
+      <Card>
+        <div className="flex flex-col md:flex-row items-center gap-3">
+          <input type="file" className="w-full md:w-auto" />
+          <button className="px-3 py-2 rounded-xl border text-sm hover:bg-neutral-50">Validate</button>
+          <button className="px-3 py-2 rounded-xl bg-orange-500 text-white text-sm hover:bg-orange-600">Import</button>
+        </div>
+        <div className="mt-4"><Empty title="No file imported" hint="Choose a CSV or Excel file exported from the device." /></div>
+      </Card>
+    </div>
+  );
+}
+
+function LeaveOTOB() {
+  return (
+    <div className="space-y-4">
+      <SectionHeader title="Leave / OT / Official Business" subtitle="Record approved requests and exceptions." actions={<AddButton label="New Request" />} />
+      <Card>
+        <Table columns={["Employee", "Type", "Date", "Hours/Days", "Status", "Actions"]} rows={[]} />
+        <div className="mt-4"><Empty /></div>
+      </Card>
+    </div>
+  );
+}
+
+function AttendanceSummary() {
+  return (
+    <div className="space-y-4">
+      <SectionHeader title="Generate Attendance Summary" subtitle="Compute daily time records and totals for payroll." />
+      <Card>
+        <div className="grid md:grid-cols-4 gap-3 mb-4">
+          <Field label="Period From"><Input type="date" /></Field>
+          <Field label="Period To"><Input type="date" /></Field>
+          <Field label="Employee / Role"><Input placeholder="All" /></Field>
+          <div className="flex items-end"><button className="w-full rounded-xl px-3 py-2 border text-sm hover:bg-neutral-50">Generate</button></div>
+        </div>
+        <Table columns={["Employee", "Days Present", "Late (min)", "Undertime (min)", "OT (hrs)"]} rows={[]} />
+        <div className="mt-4"><Empty title="No summary yet" hint="Set the date range then click Generate." /></div>
+      </Card>
+    </div>
+  );
+}
+
+function Payroll({ sub }) {
+  if (sub === "rates") return <PayRates />;
+  if (sub === "run") return <RunPayroll />;
+  if (sub === "adjust") return <Adjustments />;
+  return <EarningsDeductions />;
+}
+
+function PayRates() {
+  return (
+    <div className="space-y-4">
+      <SectionHeader title="Pay Rates by Role" subtitle="Define base rates and allowances per role." actions={<AddButton />} />
+      <Card>
+        <Table
+          columns={["Role", "Rate Type", "Base Rate", "Allowance", "Actions"]}
+          rows={[
+            ["Worker", "Daily", "₱610.00", "₱0.00", <RowActions key="1" />],
+            ["Foreman", "Monthly", "₱28,000.00", "₱2,000.00", <RowActions key="2" />],
+          ]}
+        />
+      </Card>
+    </div>
+  );
+}
+
+function RunPayroll() {
+  return (
+    <div className="space-y-4">
+      <SectionHeader title="Run Payroll" subtitle="Process earnings, deductions, and generate payslips." />
+      <Card>
+        <div className="grid md:grid-cols-5 gap-3 mb-4">
+          <Field label="Cut‑off From"><Input type="date" /></Field>
+          <Field label="Cut‑off To"><Input type="date" /></Field>
+          <Field label="Pay Type"><Select options={["Weekly", "Semi‑Monthly", "Monthly"]} defaultValue="Weekly" /></Field>
+          <Field label="Department / Role"><Input placeholder="All" /></Field>
+          <div className="flex items-end"><button className="w-full rounded-xl px-3 py-2 bg-orange-500 text-white text-sm hover:bg-orange-600">Compute</button></div>
+        </div>
+        <Table columns={["Employee", "Basic Pay", "OT Pay", "Deductions", "Net Pay", "Actions"]} rows={[]} />
+        <div className="mt-4 flex gap-2 justify-end">
+          <button className="px-3 py-2 rounded-xl border text-sm hover:bg-neutral-50">Export CSV</button>
+          <button className="px-3 py-2 rounded-xl bg-orange-500 text-white text-sm hover:bg-orange-600">Generate Payslips</button>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function Adjustments() {
+  return (
+    <div className="space-y-4">
+      <SectionHeader title="Adjustments" subtitle="Add one‑off additions or deductions per employee." actions={<AddButton label="Add Adjustment" />} />
+      <Card>
+        <Table columns={["Employee", "Type", "Amount", "Reason", "Actions"]} rows={[]} />
+        <div className="mt-4"><Empty /></div>
+      </Card>
+    </div>
+  );
+}
+
+function EarningsDeductions() {
+  return (
+    <div className="space-y-4">
+      <SectionHeader title="Earnings & Deductions" subtitle="Maintain recurring items like SSS, PhilHealth, Pag‑IBIG, allowances." actions={<AddButton />} />
+      <Card>
+        <Table columns={["Code", "Name", "Type", "Default Amount", "Actions"]} rows={[["SSS", "SSS Contribution", "Deduction", "% Table", <RowActions key="x" />]]} />
+      </Card>
+    </div>
+  );
+}
+
+function GlobalSearch() {
+  return (
+    <div className="space-y-4">
+      <SectionHeader title="Search" subtitle="Find employees, transactions, and files in one place." />
+      <Card>
+        <div className="flex gap-2">
+          <Input placeholder="Type to search…" className="flex-1" />
+          <button className="px-3 py-2 rounded-xl border text-sm hover:bg-neutral-50 flex items-center gap-2"><SearchIcon className="h-4 w-4" /> Search</button>
+        </div>
+        <div className="mt-4"><Empty title="No results" hint="Try another keyword." /></div>
+      </Card>
+    </div>
+  );
+}
+
+function Reports({ sub }) {
+  if (sub === "payslips") return <Payslips />;
+  return <GenerateReports />;
+}
+
+function GenerateReports() {
+  return (
+    <div className="space-y-4">
+      <SectionHeader title="Generate Reports" subtitle="Payroll summaries, statutory reports, and analytics." />
+      <Card>
+        <div className="grid md:grid-cols-4 gap-3 mb-4">
+          <Field label="Report Type">
+            <Select options={["Payroll Summary", "Attendance Summary", "Govt. Contributions", "Employee Masterlist"]} defaultValue="Payroll Summary" />
+          </Field>
+          <Field label="From"><Input type="date" /></Field>
+          <Field label="To"><Input type="date" /></Field>
+          <div className="flex items-end"><button className="w-full rounded-xl px-3 py-2 border text-sm hover:bg-neutral-50">Generate</button></div>
+        </div>
+        <Empty title="No report generated" hint="Choose a type and date range." />
+      </Card>
+    </div>
+  );
+}
+
+function Payslips() {
+  return (
+    <div className="space-y-4">
+      <SectionHeader title="Payslips" subtitle="Search and reprint payslips by period or employee." />
+      <Card>
+        <div className="grid md:grid-cols-4 gap-3 mb-4">
+          <Field label="Pay Period"><Input type="month" /></Field>
+          <Field label="Employee #"><Input placeholder="Optional" /></Field>
+          <Field label="Name"><Input placeholder="Optional" /></Field>
+          <div className="flex items-end"><button className="w-full rounded-xl px-3 py-2 border text-sm hover:bg-neutral-50">Find</button></div>
+        </div>
+        <Table columns={["Employee", "Period", "Net Pay", "Actions"]} rows={[]} />
+        <div className="mt-4"><Empty /></div>
+      </Card>
+    </div>
+  );
+}
+
+function Security({ sub }) {
+  if (sub === "adminReset") return <AdminReset />;
+  return <ChangePassword />;
+}
+
+function ChangePassword() {
+  return (
+    <div className="space-y-4">
+      <SectionHeader title="Change Own Password" subtitle="Update your account password." />
+      <Card>
+        <div className="grid md:grid-cols-3 gap-3">
+          <Field label="Current Password"><Input type="password" /></Field>
+          <Field label="New Password"><Input type="password" /></Field>
+          <Field label="Confirm New Password"><Input type="password" /></Field>
+        </div>
+        <div className="flex justify-end mt-4">
+          <button className="px-3 py-2 rounded-xl bg-orange-500 text-white text-sm hover:bg-orange-600">Update Password</button>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function AdminReset() {
+  return (
+    <div className="space-y-4">
+      <SectionHeader title="Admin‑Assisted Reset" subtitle="Reset a user password after identity verification." />
+      <Card>
+        <div className="grid md:grid-cols-3 gap-3">
+          <Field label="User Email"><Input placeholder="user@company.com" /></Field>
+          <Field label="Temporary Password"><Input placeholder="Auto‑generated" /></Field>
+        </div>
+        <div className="flex justify-end mt-4 gap-2">
+          <button className="px-3 py-2 rounded-xl border text-sm hover:bg-neutral-50">Cancel</button>
+          <button className="px-3 py-2 rounded-xl bg-orange-500 text-white text-sm hover:bg-orange-600">Reset Password</button>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function Help() {
+  return (
+    <div className="space-y-4">
+      <SectionHeader title="Help" subtitle="User guide, FAQs, and support contacts." />
+      <Card>
+        <p className="text-sm text-neutral-700">
+          Need assistance? Check the quick guide or contact the system administrator.
+        </p>
+        <ul className="list-disc pl-5 mt-3 text-sm text-neutral-700 space-y-1">
+          <li>Quick Start: Add users, register employees, import attendance, then run payroll.</li>
+          <li>Data Safety: Backup before running payroll or restoring data.</li>
+          <li>Issues: Document the steps to reproduce and attach screenshots.</li>
+        </ul>
+      </Card>
+    </div>
+  );
+}
+
+function AddButton({ label = "Add New" }) {
+  return (
+    <button className="px-3 py-2 rounded-xl bg-orange-500 text-white text-sm hover:bg-orange-600 flex items-center gap-2">
+      <Plus className="h-4 w-4" /> {label}
+    </button>
+  );
+}
+
+function RowActions() {
+  return (
+    <div className="flex items-center gap-1 text-neutral-700">
+      <button className="p-1.5 rounded-lg hover:bg-neutral-100" title="Edit">
+        <Edit className="h-4 w-4" />
+      </button>
+      <button className="p-1.5 rounded-lg hover:bg-neutral-100" title="Delete">
+        <Trash className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+export default function PayrollApp() {
+  const [current, setCurrent] = useState("dashboard");
+  const [currentSub, setCurrentSub] = useState(null);
+
+  const title = useMemo(() => {
+    const m = modules.find((x) => x.key === current);
+    return m ? m.label : "";
+  }, [current]);
+
+  const Screen = useMemo(() => {
+    switch (current) {
+      case "dashboard":
+        return <Dashboard />;
+      case "userMgmt":
+        return <UserMgmt sub={currentSub} />;
+      case "employees":
+        return <Employees sub={currentSub} />;
+      case "attendance":
+        return <Attendance sub={currentSub} />;
+      case "payroll":
+        return <Payroll sub={currentSub} />;
+      case "search":
+        return <GlobalSearch />;
+      case "reports":
+        return <Reports sub={currentSub} />;
+      case "security":
+        return <Security sub={currentSub} />;
+      case "help":
+        return <Help />;
+      default:
+        return <Dashboard />;
+    }
+  }, [current, currentSub]);
+
+  return (
+    <div className="h-screen w-full bg-white text-black">
+      <div className="h-full flex">
+        <Sidebar
+          current={current}
+          setCurrent={setCurrent}
+          currentSub={currentSub}
+          setCurrentSub={setCurrentSub}
+        />
+
+        <main className="flex-1 flex flex-col min-w-0">
+          <Toolbar />
+          <div className="px-6 py-4 overflow-y-auto h-full">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`${current}-${currentSub}`}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.18 }}
+                className="space-y-4"
+              >
+                <div className="flex items-center gap-2 text-sm text-neutral-600">
+                  <span className="font-medium">{title}</span>
+                  {currentSub && (
+                    <>
+                      <ChevronRight className="h-4 w-4" />
+                      <span>{currentSub}</span>
+                    </>
+                  )}
+                </div>
+                {Screen}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
