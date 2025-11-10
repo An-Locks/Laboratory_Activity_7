@@ -1,0 +1,766 @@
+document.addEventListener("DOMContentLoaded", () => {
+  // Element references
+  const loginView = document.getElementById("loginView");
+  const dashboardView = document.getElementById("dashboardView");
+  const loginForm = document.getElementById("loginForm");
+  const usernameInput = document.getElementById("username");
+  const passwordInput = document.getElementById("password");
+  const formMessage = document.getElementById("formMessage");
+  const loggedUserDisplay = document.getElementById("loggedUser");
+  const logoutButton = document.getElementById("logoutBtn");
+
+  const mainTitle = document.getElementById("mainTitle");
+  const navItems = document.querySelectorAll(".nav-item");
+
+  // Views
+  const userManagementView = document.getElementById("userManagementView");
+  const employeeView = document.getElementById("employeeView");
+  const attendanceView = document.getElementById("attendanceView");
+  const payrollView = document.getElementById("payrollView");
+  const searchView = document.getElementById("searchView");
+  const reportsView = document.getElementById("reportsView");
+  const securityView = document.getElementById("securityView");
+  const helpView = document.getElementById("helpView");
+
+  // User Management Controls
+  const usersTableBody = document.querySelector(".users-table tbody");
+  const addUserBtn = document.getElementById("addUserBtn");
+  const editUserBtn = document.getElementById("editUserBtn");
+  const resetPasswordBtn = document.getElementById("adminResetBtn");
+  const searchInput = document.querySelector(".search");
+  const backupBtn = document.querySelector(".btn-backup");
+  const restoreInput = document.getElementById("restoreFile");
+
+  // Employee Registration Controls
+  const employeeTableBody = document.getElementById("employeeTableBody");
+  const addEmployeeBtn = document.getElementById("addEmployeeBtn");
+  const editEmployeeBtn = document.getElementById("editEmployeeBtn");
+  const managePositionBtn = document.getElementById("managePositionBtn");
+
+  // Search Module Controls
+  const searchForm = document.getElementById("searchForm");
+  const searchQueryInput = document.getElementById("searchQuery");
+  const dateFromInput = document.getElementById("dateFrom");
+  const dateToInput = document.getElementById("dateTo");
+  const searchResultsBody = document.getElementById("searchResultsBody");
+  const exportPdfBtn = document.getElementById("exportPdfBtn");
+
+  // Modals and Forms
+  // User modals
+  const userFormModal = document.getElementById("userFormModal");
+  const userForm = document.getElementById("userForm");
+  const userFormTitle = document.getElementById("userFormTitle");
+  const userFormId = document.getElementById("userFormId");
+  const userFormName = document.getElementById("userFormName");
+  const userFormRole = document.getElementById("userFormRole");
+  const userFormStatus = document.getElementById("userFormStatus");
+  const userFormPassword = document.getElementById("userFormPassword");
+  const userFormMessage = document.getElementById("userFormMessage");
+  const userFormCancel = document.getElementById("userFormCancel");
+
+  // Password reset modal
+  const resetFormModal = document.getElementById("resetFormModal");
+  const resetForm = document.getElementById("resetForm");
+  const resetUserInfo = document.getElementById("resetUserInfo");
+  const resetFormPassword = document.getElementById("resetFormPassword");
+  const resetFormMessage = document.getElementById("resetFormMessage");
+  const resetFormCancel = document.getElementById("resetFormCancel");
+
+  // Registration modal
+  const registrationFormModal = document.getElementById("registrationFormModal");
+  const registrationForm = document.getElementById("registrationForm");
+  const registrationCancel = document.getElementById("registrationCancel");
+  const registrationFormMessage = document.getElementById("registrationFormMessage");
+  const regDob = document.getElementById("regDob");
+
+  // Employee modal and form
+  const employeeFormModal = document.getElementById("employeeFormModal");
+  const employeeForm = document.getElementById("employeeForm");
+  const employeeFormTitle = document.getElementById("employeeFormTitle");
+  const employeeFormMessage = document.getElementById("employeeFormMessage");
+  const employeeFormCancel = document.getElementById("employeeFormCancel");
+
+  // Manage Position modal and form
+  const managePositionModal = document.getElementById("managePositionModal");
+  const managePositionForm = document.getElementById("managePositionForm");
+  const managePositionMessage = document.getElementById("managePositionMessage");
+  const managePositionCancel = document.getElementById("managePositionCancel");
+
+  // Help module FAQ toggle button and content
+  const viewFAQBtn = document.getElementById("viewFAQBtn");
+  const faqContent = document.getElementById("faqContent");
+
+  // Storage keys
+  const SESSION_KEY = "rmb_session_v1";
+  const STORAGE_KEY = "rmb_users_v1";
+  const EMPLOYEES_KEY = "rmb_employees_v1";
+  const POSITIONS_KEY = "rmb_positions_v1";
+
+  // Constants
+  const SELECTED_CLASS = "row-selected";
+  const SESSION_DURATION_MS = 30 * 60 * 1000;
+  const WARNING_OFFSET_MS = 5 * 60 * 1000;
+  let selectedUserId = null;
+  let inactivityWarningTimer = null;
+  let inactivityLogoutTimer = null;
+  let sessionExpiredByInactivity = false;
+
+  // Default data
+  const defaultUsers = [
+    { id: "admin01", name: "System Admin", role: "Administrator", status: "Active", password: "adminpw" },
+    { id: "acct01", name: "Rey Lee", role: "Accounting Staff", status: "Active", password: "acctpw" },
+    { id: "hr01", name: "Mia Santos", role: "HR Staff", status: "Active", password: "hrpw" }
+  ];
+
+  const demoEmployees = [
+    { id: "EMP001", name: "Miguel Santos", position: "Foreman", rate: "₱650/day", bio: "BIO123", status: "Active" },
+    { id: "EMP002", name: "Tricia Ramirez", position: "Site Engineer", rate: "₱900/day", bio: "BIO234", status: "Active" },
+    { id: "EMP003", name: "Jaime Medallo", position: "Laborer", rate: "₱500/day", bio: "BIO345", status: "Inactive" }
+  ];
+
+  const defaultPositions = [
+    { position: "Foreman", rate: "₱650/day" },
+    { position: "Site Engineer", rate: "₱900/day" },
+    { position: "Laborer", rate: "₱500/day" }
+  ];
+
+  // Utility functions: load / save data 
+  function loadUsers() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultUsers));
+      return defaultUsers.slice();
+    }
+    try { return JSON.parse(raw); } catch { return defaultUsers.slice(); }
+  }
+  function saveUsers(users) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+  }
+  function loadEmployees() {
+    const raw = localStorage.getItem(EMPLOYEES_KEY);
+    if (!raw) {
+      localStorage.setItem(EMPLOYEES_KEY, JSON.stringify(demoEmployees));
+      return demoEmployees.slice();
+    }
+    try { return JSON.parse(raw); } catch { return demoEmployees.slice(); }
+  }
+  function saveEmployees(employees) {
+    localStorage.setItem(EMPLOYEES_KEY, JSON.stringify(employees));
+  }
+  function loadPositions() {
+    const raw = localStorage.getItem(POSITIONS_KEY);
+    if (!raw) {
+      localStorage.setItem(POSITIONS_KEY, JSON.stringify(defaultPositions));
+      return defaultPositions.slice();
+    }
+    try { return JSON.parse(raw); } catch { return defaultPositions.slice(); }
+  }
+  function savePositions(positions) {
+    localStorage.setItem(POSITIONS_KEY, JSON.stringify(positions));
+  }
+
+  // Toast notifications
+  function showToast(msg, type = "info") {
+    const el = document.createElement("div");
+    el.className = `rmb-toast rmb-toast-${type}`;
+    el.textContent = msg;
+    Object.assign(el.style, {
+      position: "fixed",
+      right: "18px",
+      bottom: "18px",
+      padding: "10px 14px",
+      background: type === "success" ? "#2b7a2b" : type === "warn" ? "#d07a00" : type === "error" ? "#d64545" : "#333",
+      color: "#fff",
+      borderRadius: "6px",
+      zIndex: 9999,
+      opacity: 0,
+      transition: "opacity .18s ease"
+    });
+    document.body.appendChild(el);
+    requestAnimationFrame(() => el.style.opacity = "1");
+    setTimeout(() => { el.style.opacity = "0"; setTimeout(() => el.remove(), 250); }, 3500);
+  }
+
+  // Render users table
+  function renderUsers(filter = "") {
+    const users = loadUsers();
+    const q = filter.toLowerCase().trim();
+    usersTableBody.innerHTML = "";
+    users.sort((a, b) => (a.id.toLowerCase() < b.id.toLowerCase() ? -1 : 1)).filter(u => !q || [u.id, u.name, u.role, u.status].some(x => x.toLowerCase().includes(q))).forEach(u => {
+      const tr = document.createElement("tr");
+      tr.dataset.userid = u.id;
+      ["id", "name", "role", "status"].forEach(col => {
+        const td = document.createElement("td");
+        td.textContent = u[col];
+        tr.appendChild(td);
+      });
+      tr.addEventListener("click", () => selectedUserId === u.id ? clearSelection() : selectRow(u.id));
+      tr.addEventListener("dblclick", () => {
+        selectRow(u.id);
+        showEditUserModal();
+      });
+      usersTableBody.appendChild(tr);
+    });
+    if (selectedUserId) {
+      const restored = usersTableBody.querySelector(`tr[data-userid="${selectedUserId}"]`);
+      if (restored) restored.classList.add(SELECTED_CLASS);
+      else clearSelection();
+    }
+  }
+  // Select/Clear rows (users)
+  function selectRow(userId) {
+    clearSelection();
+    const row = usersTableBody.querySelector(`tr[data-userid="${userId}"]`);
+    if (row) { row.classList.add(SELECTED_CLASS); selectedUserId = userId; }
+    else selectedUserId = null;
+  }
+  function clearSelection() {
+    const selected = usersTableBody.querySelector(`tr.${SELECTED_CLASS}`);
+    if (selected) selected.classList.remove(SELECTED_CLASS);
+    selectedUserId = null;
+  }
+  function findUserById(id) {
+    return loadUsers().find(u => u.id === id);
+  }
+  function updateUser(user) {
+    const users = loadUsers();
+    const idx = users.findIndex(u => u.id === user.id);
+    if (idx >= 0) users[idx] = user;
+    else users.push(user);
+    saveUsers(users);
+    renderUsers(searchInput.value);
+  }
+
+  // Render employee table
+  function renderEmployeesTable() {
+    const employees = loadEmployees();
+    employeeTableBody.innerHTML = "";
+    employees.forEach(({ id, name, position, rate, bio, status }) => {
+      const tr = document.createElement("tr");
+      [id, name, position, rate, bio, status].forEach(text => {
+        const td = document.createElement("td");
+        td.textContent = text;
+        tr.appendChild(td);
+      });
+      tr.addEventListener("click", () => {
+        const selected = employeeTableBody.querySelector(".row-selected");
+        if (selected && selected !== tr) selected.classList.remove("row-selected");
+        tr.classList.toggle("row-selected");
+      });
+      employeeTableBody.appendChild(tr);
+    });
+  }
+
+  // Modal open/close
+  function openModal(modal) { modal.setAttribute("aria-hidden", "false"); }
+  function closeModal(modal) { modal.setAttribute("aria-hidden", "true"); }
+
+  // User modals handling
+  addUserBtn.addEventListener("click", () => {
+    userFormTitle.textContent = "Add User";
+    userFormId.value = "";
+    userFormId.disabled = false;
+    userFormName.value = "";
+    userFormRole.value = "";
+    userFormStatus.value = "Active";
+    userFormPassword.value = "";
+    userFormMessage.textContent = "";
+    openModal(userFormModal);
+  });
+  editUserBtn.addEventListener("click", () => {
+    if (!selectedUserId) { showToast("Select a user first.", "warn"); return; }
+    const user = findUserById(selectedUserId);
+    if (!user) { showToast("User not found.", "error"); return; }
+    userFormTitle.textContent = "Edit User";
+    userFormId.value = user.id;
+    userFormId.disabled = true;
+    userFormName.value = user.name;
+    userFormRole.value = user.role;
+    userFormStatus.value = user.status;
+    userFormPassword.value = user.password;
+    userFormMessage.textContent = "";
+    openModal(userFormModal);
+  });
+  userFormCancel.addEventListener("click", () => closeModal(userFormModal));
+  userForm.addEventListener("submit", e => {
+    e.preventDefault();
+    const id = userFormId.value.trim();
+    const name = userFormName.value.trim();
+    const role = userFormRole.value.trim();
+    const status = userFormStatus.value;
+    const pwd = userFormPassword.value;
+    if (!id || !name) {
+      userFormMessage.textContent = "User ID and name are required.";
+      return;
+    }
+    const users = loadUsers();
+    if (userFormId.disabled) {
+      const user = users.find(u => u.id === id);
+      if (!user) {
+        userFormMessage.textContent = "User not found.";
+        return;
+      }
+      user.name = name; user.role = role; user.status = status; user.password = pwd;
+      updateUser(user);
+      showToast("User updated.", "success");
+    } else {
+      if (users.some(u => u.id === id)) {
+        userFormMessage.textContent = "User ID already exists.";
+        return;
+      }
+      updateUser({ id, name, role, status, password: pwd || "changeme" });
+      showToast("User added.", "success");
+    }
+    closeModal(userFormModal);
+    setTimeout(() => selectRow(id), 80);
+  });
+
+  // Password Reset modal
+  resetPasswordBtn.addEventListener("click", () => {
+    if (!selectedUserId) { showToast("Select a user to reset password for.", "warn"); return; }
+    const user = findUserById(selectedUserId);
+    if (!user) { showToast("User not found.", "error"); return; }
+    resetUserInfo.textContent = `Reset password for ${user.name} (${user.id})`;
+    resetFormPassword.value = "";
+    resetFormMessage.textContent = "";
+    openModal(resetFormModal);
+  });
+  resetFormCancel.addEventListener("click", () => closeModal(resetFormModal));
+  resetForm.addEventListener("submit", e => {
+    e.preventDefault();
+    const pwd = resetFormPassword.value;
+    if (!pwd) {
+      resetFormMessage.textContent = "Password required.";
+      return;
+    }
+    const user = findUserById(selectedUserId);
+    user.password = pwd;
+    updateUser(user);
+    showToast("Password reset.", "success");
+    closeModal(resetFormModal);
+  });
+
+  // Registration modal
+  regDob.max = new Date().toISOString().split("T")[0];
+  registrationCancel.addEventListener("click", () => closeModal(registrationFormModal));
+  registrationForm.addEventListener("submit", e => {
+    e.preventDefault();
+    registrationFormMessage.style.color = "red";
+    if (!registrationForm.checkValidity()) {
+      registrationFormMessage.textContent = "Please fill out all required fields correctly.";
+      registrationForm.reportValidity();
+      return;
+    }
+    if (!registrationForm.querySelector('input[name="contactMethod"]:checked')) {
+      registrationFormMessage.textContent = "Please select a preferred contact method.";
+      return;
+    }
+    registrationFormMessage.style.color = "#2b7a2b";
+    registrationFormMessage.textContent = "Registration successful!";
+    setTimeout(() => closeModal(registrationFormModal), 2000);
+  });
+
+  // Employee modal add/edit handlers
+  addEmployeeBtn.addEventListener("click", () => {
+    employeeFormTitle.textContent = "Add Employee";
+    employeeForm.reset();
+    employeeForm.empId.disabled = false;
+    employeeFormMessage.textContent = "";
+    openModal(employeeFormModal);
+  });
+  editEmployeeBtn.addEventListener("click", () => {
+    const selectedRow = employeeTableBody.querySelector(".row-selected");
+    if (!selectedRow) {
+      alert("Select an employee row to edit.");
+      return;
+    }
+    employeeFormTitle.textContent = "Edit Employee";
+    employeeFormMessage.textContent = "";
+    const cells = selectedRow.querySelectorAll("td");
+    employeeForm.empId.value = cells[0].textContent;
+    employeeForm.empName.value = cells[1].textContent;
+    employeeForm.empPosition.value = cells[2].textContent;
+    employeeForm.empRate.value = cells[3].textContent;
+    employeeForm.empBioId.value = cells[4].textContent;
+    employeeForm.empStatus.value = cells[5].textContent;
+    employeeForm.empId.disabled = true;
+    openModal(employeeFormModal);
+  });
+  employeeFormCancel.addEventListener("click", () => closeModal(employeeFormModal));
+  employeeForm.addEventListener("submit", e => {
+    e.preventDefault();
+    const empData = {
+      id: employeeForm.empId.value.trim(),
+      name: employeeForm.empName.value.trim(),
+      position: employeeForm.empPosition.value.trim(),
+      rate: employeeForm.empRate.value.trim(),
+      bio: employeeForm.empBioId.value.trim(),
+      status: employeeForm.empStatus.value,
+    };
+    if (!empData.id || !empData.name) {
+      employeeFormMessage.textContent = "Employee ID and Name are required.";
+      return;
+    }
+    let employees = loadEmployees();
+    if (employeeForm.empId.disabled) {
+      const idx = employees.findIndex(e => e.id === empData.id);
+      if (idx !== -1) employees[idx] = empData;
+      else {
+        employeeFormMessage.textContent = "Employee not found.";
+        return;
+      }
+    } else {
+      if (employees.some(e => e.id === empData.id)) {
+        employeeFormMessage.textContent = "Employee ID already exists.";
+        return;
+      }
+      employees.push(empData);
+    }
+    saveEmployees(employees);
+    renderEmployeesTable();
+    closeModal(employeeFormModal);
+  });
+
+  // Manage positions modal handlers
+  managePositionBtn.addEventListener("click", () => {
+    managePositionForm.reset();
+    managePositionMessage.textContent = "";
+    openModal(managePositionModal);
+  });
+  managePositionCancel.addEventListener("click", () => closeModal(managePositionModal));
+  managePositionForm.addEventListener("submit", e => {
+    e.preventDefault();
+    const posData = {
+      position: managePositionForm.posName.value.trim(),
+      rate: managePositionForm.posRate.value.trim(),
+    };
+    if (!posData.position || !posData.rate) {
+      managePositionMessage.textContent = "Position and Rate are required.";
+      return;
+    }
+    let positions = loadPositions();
+    const idx = positions.findIndex(p => p.position.toLowerCase() === posData.position.toLowerCase());
+    if (idx !== -1) {
+      positions[idx] = posData;
+    } else {
+      positions.push(posData);
+    }
+    savePositions(positions);
+    closeModal(managePositionModal);
+    alert("Position/Rate saved. Extend logic to update employees if needed.");
+  });
+
+  // Help module FAQ toggle
+  if (viewFAQBtn && faqContent) {
+    viewFAQBtn.addEventListener("click", () => {
+      faqContent.style.display = faqContent.style.display === "block" ? "none" : "block";
+    });
+  }
+
+  // Backup and restore user data
+  backupBtn.addEventListener("click", () => {
+    const users = loadUsers();
+    let csv = "id,name,role,status\n";
+    for (const u of users) {
+      csv += `"${u.id}","${u.name}","${u.role}","${u.status}"\n`;
+    }
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "users_backup.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast("Backup exported.", "success");
+  });
+  restoreInput.addEventListener("change", e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const text = ev.target.result;
+      const lines = text.trim().split("\n");
+      const newUsers = [];
+      for (let i = 1; i < lines.length; i++) {
+        const parts = lines[i].split(",");
+        if (parts.length >= 4 && parts[0].trim()) {
+          newUsers.push({
+            id: parts[0].replace(/"/g, '').trim(),
+            name: parts[1].replace(/"/g, '').trim(),
+            role: parts[2].replace(/"/g, '').trim(),
+            status: parts[3].replace(/"/g, '').trim(),
+            password: "changeme"
+          });
+        }
+      }
+      if (newUsers.length === 0) {
+        showToast("No valid users found in backup.", "warn");
+        return;
+      }
+      saveUsers(newUsers);
+      renderUsers();
+      showToast("Backup imported. Passwords set to 'changeme'.", "success");
+      restoreInput.value = "";
+    };
+    reader.readAsText(file);
+  });
+
+  // Attendance stub buttons (alerts for future implementation)
+  document.getElementById("importBiometricBtn")?.addEventListener("click", () => alert("Import biometric logs (USB) coming soon."));
+  document.getElementById("addManualEntryBtn")?.addEventListener("click", () => alert("Add manual attendance entry coming soon."));
+  document.getElementById("generateSummaryBtn")?.addEventListener("click", () => alert("Generate summary functionality coming soon."));
+
+  // Navigation sidebar switching
+  navItems.forEach(item => {
+    item.addEventListener("click", () => {
+      navItems.forEach(n => n.classList.remove("active"));
+      item.classList.add("active");
+      // Hide all views
+      userManagementView.style.display = "none";
+      employeeView.style.display = "none";
+      attendanceView.style.display = "none";
+      payrollView.style.display = "none";
+      searchView.style.display = "none";
+      reportsView.style.display = "none";
+      securityView.style.display = "none";
+      helpView.style.display = "none";
+
+      switch (item.getAttribute("data-view")) {
+        case "userManagement":
+          userManagementView.style.display = "block";
+          mainTitle.textContent = "User Management & System Maintenance";
+          renderUsers();
+          break;
+        case "employee":
+          employeeView.style.display = "block";
+          mainTitle.textContent = "Employee Registration & Maintenance";
+          renderEmployeesTable();
+          break;
+        case "attendance":
+          attendanceView.style.display = "block";
+          mainTitle.textContent = "Attendance Management";
+          break;
+        case "payroll":
+          payrollView.style.display = "block";
+          mainTitle.textContent = "Payroll Calculation";
+          break;
+        case "search":
+          searchView.style.display = "block";
+          mainTitle.textContent = "Search Records";
+          // Optionally clear search inputs or keep previous
+          renderSearchResults([]); // Clear or show empty initially
+          break;
+        case "reports":
+          reportsView.style.display = "block";
+          mainTitle.textContent = "Reports";
+          break;
+        case "security":
+          securityView.style.display = "block";
+          mainTitle.textContent = "Security";
+          break;
+        case "help":
+          helpView.style.display = "block";
+          mainTitle.textContent = "Help / Manual";
+          break;
+        default:
+          userManagementView.style.display = "block";
+          mainTitle.textContent = "User Management & System Maintenance";
+      }
+    });
+  });
+
+  // Session management functions
+  function createSession(userId) {
+    const expiry = Date.now() + SESSION_DURATION_MS;
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ user: userId, expiry: expiry }));
+  }
+  function clearSession() {
+    localStorage.removeItem(SESSION_KEY);
+  }
+  function restoreSession() {
+    try {
+      const raw = localStorage.getItem(SESSION_KEY);
+      if (!raw) return null;
+      const session = JSON.parse(raw);
+      if (!session.user || !session.expiry) return null;
+      if (Date.now() > session.expiry) {
+        clearSession();
+        return null;
+      }
+      return session;
+    } catch {
+      return null;
+    }
+  }
+  function clearInactivityTimers() {
+    if (inactivityWarningTimer) { clearTimeout(inactivityWarningTimer); inactivityWarningTimer = null; }
+    if (inactivityLogoutTimer) { clearTimeout(inactivityLogoutTimer); inactivityLogoutTimer = null; }
+  }
+  function startInactivityTimers() {
+    clearInactivityTimers();
+    const sess = restoreSession();
+    if (!sess) return;
+    const msLeft = sess.expiry - Date.now();
+    if (msLeft <= 0) return;
+    sessionExpiredByInactivity = false;
+    inactivityWarningTimer = setTimeout(() => {
+      sessionExpiredByInactivity = true;
+      showToast("Session will expire soon due to inactivity.", "warn");
+    }, msLeft - WARNING_OFFSET_MS);
+    inactivityLogoutTimer = setTimeout(() => {
+      if (sessionExpiredByInactivity) handleAutoLogout();
+    }, msLeft);
+  }
+  function refreshSessionActivity() {
+    const sess = restoreSession();
+    if (!sess) return;
+    sess.expiry = Date.now() + SESSION_DURATION_MS;
+    localStorage.setItem(SESSION_KEY, JSON.stringify(sess));
+    startInactivityTimers();
+  }
+  function handleAutoLogout() {
+    clearSession();
+    clearInactivityTimers();
+    if (sessionExpiredByInactivity) showToast("You have been logged out due to inactivity.", "warn");
+    loggedUserDisplay.textContent = "";
+    loginView.style.display = "flex";
+    dashboardView.style.display = "none";
+    clearSelection();
+  }
+
+  // Login form submit handler
+  loginForm.addEventListener("submit", e => {
+    e.preventDefault();
+    const u = usernameInput.value.trim();
+    const p = passwordInput.value;
+    if (!u || !p) {
+      formMessage.textContent = "Please enter username and password.";
+      formMessage.style.color = "red";
+      return;
+    }
+    const users = loadUsers();
+    const user = users.find(us => us.id === u && us.password === p);
+    if (!user) {
+      formMessage.textContent = "Invalid username or password.";
+      formMessage.style.color = "red";
+      return;
+    }
+    formMessage.textContent = "";
+    createSession(user.id);
+    loggedUserDisplay.textContent = `${user.name} (${user.role})`;
+    loginView.style.display = "none";
+    dashboardView.style.display = "flex";
+    renderUsers();
+    startInactivityTimers();
+  });
+
+  logoutButton.addEventListener("click", () => {
+    sessionExpiredByInactivity = false;
+    handleAutoLogout();
+  });
+
+  // Reset session timers on activity
+  ["click", "keydown", "mousemove", "scroll"].forEach(evt => document.addEventListener(evt, refreshSessionActivity));
+
+  // Search module logic
+
+  // Function to render search results in the table
+  function renderSearchResults(results) {
+    searchResultsBody.innerHTML = "";
+    results.forEach(r => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${r.employeeId}</td>
+        <td>${r.name}</td>
+        <td>${r.recordType}</td>
+        <td>${r.details}</td>
+        <td>${r.date}</td>
+      `;
+      searchResultsBody.appendChild(tr);
+    });
+  }
+
+  // Example: combine employees and some mock attendance and payroll data for search
+  function getSearchData() {
+    // Employees data
+    const employees = loadEmployees();
+    // Example dummy attendance and payroll data arrays:
+    const attendanceRecords = [
+      { employeeId: "EMP001", name: "Miguel Santos", recordType: "Attendance", details: "Present", date: "2025-10-30" },
+      { employeeId: "EMP002", name: "Tricia Ramirez", recordType: "Attendance", details: "Late", date: "2025-10-30" },
+      { employeeId: "EMP003", name: "Jaime Medallo", recordType: "Attendance", details: "Absent", date: "2025-10-30" }
+    ];
+    const payrollRecords = [
+      { employeeId: "EMP001", name: "Miguel Santos", recordType: "Payroll", details: "₱650/day", date: "2025-10-25" },
+      { employeeId: "EMP002", name: "Tricia Ramirez", recordType: "Payroll", details: "₱900/day", date: "2025-10-25" }
+    ];
+
+    // Combine all into one array
+    return [].concat(attendanceRecords, payrollRecords);
+  }
+
+  searchForm.addEventListener("submit", e => {
+    e.preventDefault();
+    const query = searchQueryInput.value.toLowerCase();
+    const fromDate = dateFromInput.value;
+    const toDate = dateToInput.value;
+
+    const data = getSearchData();
+    const filtered = data.filter(r => {
+      const matchesQuery = !query || r.name.toLowerCase().includes(query) || r.employeeId.toLowerCase().includes(query);
+      const matchesFrom = !fromDate || r.date >= fromDate;
+      const matchesTo = !toDate || r.date <= toDate;
+      return matchesQuery && matchesFrom && matchesTo;
+    });
+
+    renderSearchResults(filtered);
+  });
+
+  // Export PDF button logic (simplified)
+  exportPdfBtn.addEventListener("click", () => {
+    import("jspdf").then(jsPDFModule => {
+      const { jsPDF } = jsPDFModule;
+      const doc = new jsPDF();
+      const rows = [];
+      const headers = ["Employee ID", "Name", "Record Type", "Details", "Date"];
+      const trElems = searchResultsBody.querySelectorAll("tr");
+      trElems.forEach(tr => {
+        const rowData = Array.from(tr.querySelectorAll("td")).map(td => td.textContent);
+        rows.push(rowData);
+      });
+      doc.text("Payroll Search Results", 10, 10);
+      doc.autoTable({
+        head: [headers],
+        body: rows,
+        startY: 20,
+        theme: "grid",
+      });
+      doc.save("search_results.pdf");
+    }).catch(() => {
+      showToast("Failed to generate PDF.", "error");
+    });
+  });
+
+  // Initialize app on page load
+  (function init() {
+    const sess = restoreSession();
+    if (sess) {
+      const users = loadUsers();
+      const user = users.find(u => u.id === sess.user);
+      if (user) {
+        loggedUserDisplay.textContent = `${user.name} (${user.role})`;
+        loginView.style.display = "none";
+        dashboardView.style.display = "flex";
+        renderUsers();
+        renderEmployeesTable();
+        startInactivityTimers();
+        return;
+      }
+    }
+    loginView.style.display = "flex";
+    dashboardView.style.display = "none";
+  })();
+
+  // Initial render of employee table
+  renderEmployeesTable();
+});
