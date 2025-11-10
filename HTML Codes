@@ -1,0 +1,360 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/3.0.3/jspdf.umd.min.js"></script>
+<div id="app">
+  <!-- LOGIN VIEW -->
+  <div class="login-wrapper" id="loginView" aria-hidden="false">
+    <div class="card" role="main" aria-labelledby="loginTitle">
+      <h2 id="loginTitle" class="card-title">RMB Payroll Login</h2>
+      <form id="loginForm" novalidate>
+        <label class="sr-only" for="username">Username</label>
+        <input id="username" name="username" type="text" placeholder="Username" autocomplete="username" required />
+        <label class="sr-only" for="password">Password</label>
+        <input id="password" name="password" type="password" placeholder="Password" autocomplete="current-password" required />
+        <button type="submit" class="btn-login">Login</button>
+        <p class="forgot"><a href="#">Forgot Password?</a></p>
+        <div id="formMessage" class="form-message" aria-live="polite"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- DASHBOARD VIEW -->
+  <div id="dashboardView" class="dashboard" aria-hidden="true">
+    <aside class="sidebar" aria-label="Sidebar navigation">
+      <div class="brand">
+        <div class="brand-title">RMB Payroll</div>
+        <div class="brand-sub">LAN-based • Payroll System</div>
+      </div>
+      <nav class="nav">
+        <ul>
+          <li class="nav-item active" data-view="userManagement" tabindex="0">User Management & System Maintenance</li>
+          <li class="nav-item" data-view="employee" tabindex="0">Employee Registration & Maintenance</li>
+          <li class="nav-item" data-view="attendance" tabindex="0">Attendance Management</li>
+          <li class="nav-item" data-view="payroll" tabindex="0">Payroll Calculation</li>
+          <li class="nav-item" data-view="search" tabindex="0">Search</li>
+          <li class="nav-item" data-view="reports" tabindex="0">Reports</li>
+          <li class="nav-item" data-view="security" tabindex="0">Security</li>
+          <li class="nav-item" data-view="help" tabindex="0">Help / Manual</li>
+        </ul>
+      </nav>
+    </aside>
+    <main class="main">
+      <div class="topbar">
+        <div class="page-title" id="mainTitle">User Management & System Maintenance</div>
+        <div class="top-actions">
+          <input class="search" type="search" placeholder="Search everywhere..." aria-label="Search" />
+          <div class="user-info" aria-live="polite">
+            <span id="loggedUser"></span>
+            <button id="logoutBtn" class="btn-link">Logout</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- User Management View -->
+      <section id="userManagementView" class="content" aria-label="User Management">
+        <div class="controls">
+          <button class="btn btn-add" id="addUserBtn">Add User</button>
+          <button class="btn btn-edit" id="editUserBtn">Edit User</button>
+          <button class="btn btn-reset transparent-white" id="adminResetBtn">Admin-Assisted Password Reset</button>
+        </div>
+        <div class="card-table">
+          <table class="users-table" aria-describedby="tableDesc" role="grid" tabindex="0">
+            <caption id="tableDesc" class="sr-only">Existing users</caption>
+            <thead>
+              <tr>
+                <th data-col="id" scope="col" tabindex="0" aria-sort="none">User ID</th>
+                <th data-col="name" scope="col" tabindex="0" aria-sort="none">Name</th>
+                <th data-col="role" scope="col" tabindex="0" aria-sort="none">Role</th>
+                <th data-col="status" scope="col" tabindex="0" aria-sort="none">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- User rows rendered by JS -->
+            </tbody>
+          </table>
+          <div class="system-maintenance" aria-label="System Maintenance">
+            <h4>System Maintenance</h4>
+            <p class="muted">Perform database backup and restoration for data security.</p>
+            <div class="maintenance-actions">
+              <button class="btn btn-backup" id="backupBtn">Backup Database</button>
+              <label class="custom-file-upload">
+                Restore Database
+                <input type="file" class="hidden-input" id="restoreFile" accept=".csv" aria-label="Restore Database CSV File" />
+              </label>
+              <span class="file-chosen-label" id="fileChosenLabel">No file chosen</span>
+            </div>
+            <div id="maintMessage" class="maint-message" aria-live="polite"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Employee Registration & Maintenance -->
+      <section id="employeeView" class="content" style="display:none;">
+        <div class="controls">
+          <button class="btn btn-add" id="addEmployeeBtn">Add Employee</button>
+          <button class="btn btn-edit" id="editEmployeeBtn">Edit Employee</button>
+          <button class="btn" id="managePositionBtn">Manage Position & Rate</button>
+        </div>
+        <div class="card-table">
+          <table class="employee-table" aria-describedby="employeeTableDesc" role="grid">
+            <caption id="employeeTableDesc" class="sr-only">List of registered employees</caption>
+            <thead>
+              <tr>
+                <th>Employee ID</th>
+                <th>Name</th>
+                <th>Position</th>
+                <th>Rate</th>
+                <th>Biometric ID</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="employeeTableBody">
+              <!-- Dynamic employee rows via JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Attendance Management -->
+      <section id="attendanceView" class="content" style="display:none;">
+        <div class="controls">
+          <button class="btn btn-add" id="importBiometricBtn">Import Biometric Logs (USB)</button>
+          <button class="btn btn-edit" id="addManualEntryBtn">Add Manual Entry</button>
+          <button class="btn btn-reset" id="generateSummaryBtn">Generate Summary</button>
+        </div>
+        <div class="card-table">
+          <table class="attendance-table" aria-describedby="attendanceDesc" role="grid" tabindex="0">
+            <caption id="attendanceDesc" class="sr-only">Employee attendance records</caption>
+            <thead>
+              <tr>
+                <th>Employee ID</th>
+                <th>Name</th>
+                <th>Date</th>
+                <th>Time In</th>
+                <th>Time Out</th>
+                <th>Shift</th>
+                <th>Status</th>
+                <th>Source</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>EMP001</td><td>Miguel Santos</td><td>2025-10-30</td><td>08:01</td><td>17:02</td><td>Morning</td><td>Present</td><td>Automated</td></tr>
+              <tr><td>EMP002</td><td>Tricia Ramirez</td><td>2025-10-30</td><td>09:15</td><td>18:10</td><td>Morning</td><td>Late</td><td>Manual</td></tr>
+              <tr><td>EMP003</td><td>Jaime Medallo</td><td>2025-10-30</td><td>-</td><td>-</td><td>-</td><td>Absent</td><td>-</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Payroll Calculation -->
+      <section id="payrollView" class="content" style="display:none;">
+        <div class="card-table">
+          <h3>Payroll Calculation</h3>
+          <p>Feature coming soon.</p>
+        </div>
+      </section>
+
+      <!-- Search Module -->
+      <section id="searchView" class="content" style="display:none;">
+        <div class="card-table">
+          <h3>Search Records</h3>
+          <form id="searchForm" aria-label="Search payroll records" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px;">
+            <input id="searchQuery" type="text" placeholder="Search by Name or ID" aria-label="Search by Name or ID" style="flex-grow:1; min-width:180px; padding:6px 10px; border-radius:6px; border:1px solid #ccc;" />
+            <input type="date" id="dateFrom" aria-label="Date from" />
+            <input type="date" id="dateTo" aria-label="Date to" />
+            <button type="submit" class="btn btn-add" style="min-width: 80px;">Search</button>
+            <button type="button" class="btn btn-edit" id="exportPdfBtn" style="min-width: 110px;">Export PDF</button>
+          </form>
+          <table class="search-results-table" aria-describedby="searchTableDesc" role="grid" tabindex="0" style="width: 100%; border-collapse: collapse;">
+            <caption id="searchTableDesc" class="sr-only">Search results showing payroll and attendance records</caption>
+            <thead style="background-color: #f0f6ff;">
+              <tr>
+                <th scope="col" style="text-align:left; padding: 8px 6px;">Employee ID</th>
+                <th scope="col" style="text-align:left; padding: 8px 6px;">Name</th>
+                <th scope="col" style="text-align:left; padding: 8px 6px;">Record Type</th>
+                <th scope="col" style="text-align:left; padding: 8px 6px;">Details</th>
+                <th scope="col" style="text-align:left; padding: 8px 6px;">Date</th>
+              </tr>
+            </thead>
+            <tbody id="searchResultsBody">
+              <!-- Results go here -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Reports -->
+      <section id="reportsView" class="content" style="display:none;">
+        <div class="card-table">
+          <h3>Reports</h3>
+          <p>Feature coming soon.</p>
+        </div>
+      </section>
+
+      <!-- Security -->
+      <section id="securityView" class="content" style="display:none;">
+        <div class="card-table">
+          <h3>Security</h3>
+          <p>Feature coming soon.</p>
+        </div>
+      </section>
+
+      <!-- Help & Support (Updated) -->
+      <section id="helpView" class="content" style="display:none;">
+        <div class="card-table">
+          <h3>Help & Support</h3>
+          <div style="margin-top: 18px;">
+            <strong>User Manual</strong>
+            <p>Download the official user manual PDF to get detailed usage guidelines.</p>
+            <button onclick="window.open('manual.pdf')" class="btn btn-add">Download PDF</button>
+          </div>
+          <div style="margin-top: 18px;">
+            <strong>FAQ & Troubleshooting</strong>
+            <p>Find answers to common issues. You can reset passwords or contact support here.</p>
+            <button id="viewFAQBtn" class="btn btn-edit">View FAQ</button>
+            <div id="faqContent" style="margin-top: 12px; border: 1px solid #eee; padding: 10px; border-radius: 6px; background: #f9f9f9;">
+              <p><strong>Q:</strong> How to reset my password?<br/><strong>A:</strong> Use the Admin-Assisted Password Reset feature in User Management.</p>
+              <p><strong>Q:</strong> How to add a new employee?<br/><strong>A:</strong> Navigate to Employee Registration and click "Add Employee" button.</p>
+              <p><strong>Q:</strong> Need technical support?<br/><strong>A:</strong> Contact your system administrator or email <a href="mailto:support@example.com">support@example.com</a>.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modals Section -->
+
+  <!-- Add/Edit User Modal -->
+  <div id="userFormModal" class="modal" aria-hidden="true">
+    <div class="modal-content card">
+      <h2 id="userFormTitle" class="card-title">Add User</h2>
+      <form id="userForm" autocomplete="off">
+        <label for="userFormId">User ID</label>
+        <input id="userFormId" type="text" placeholder="e.g. admin01" required />
+        <label for="userFormName">Full Name</label>
+        <input id="userFormName" type="text" placeholder="e.g. Juan Dela Cruz" required />
+        <label for="userFormRole">Role</label>
+        <input id="userFormRole" type="text" placeholder="e.g. Administrator" required />
+        <label for="userFormStatus">Status</label>
+        <select id="userFormStatus">
+          <option value="Active" selected>Active</option>
+          <option value="Inactive">Inactive</option>
+        </select>
+        <label for="userFormPassword">Password</label>
+        <input id="userFormPassword" type="password" placeholder="At least 6 characters" required minlength="6" />
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-add">Save</button>
+          <button type="button" class="btn btn-edit" id="userFormCancel">Cancel</button>
+        </div>
+        <div id="userFormMessage" class="form-message"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Password Reset Modal -->
+  <div id="resetFormModal" class="modal" aria-hidden="true">
+    <div class="modal-content card">
+      <h2 class="card-title">Admin-Assisted Password Reset</h2>
+      <form id="resetForm" autocomplete="off">
+        <div id="resetUserInfo" style="margin-bottom:10px;font-size:14px;"></div>
+        <label for="resetFormPassword">New Password</label>
+        <input id="resetFormPassword" type="password" placeholder="At least 6 characters" required minlength="6" />
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-reset transparent-white">Reset</button>
+          <button type="button" class="btn btn-edit" id="resetFormCancel">Cancel</button>
+        </div>
+        <div id="resetFormMessage" class="form-message"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Registration Modal -->
+  <div id="registrationFormModal" class="modal" aria-hidden="true" aria-labelledby="registrationFormTitle" role="dialog" aria-modal="true">
+    <div class="modal-content card">
+      <h2 id="registrationFormTitle" class="card-title">User Registration</h2>
+      <form id="registrationForm" novalidate autocomplete="off">
+        <label for="regUsername">Username <span aria-hidden="true">*</span></label>
+        <input id="regUsername" name="username" type="text" placeholder="Enter a username" required minlength="4" maxlength="15" aria-describedby="usernameHelp" />
+        <label for="regPassword">Password <span aria-hidden="true">*</span></label>
+        <input id="regPassword" name="password" type="password" placeholder="Enter password" required minlength="6" aria-describedby="passwordHelp" />
+        <label for="regEmail">Email <span aria-hidden="true">*</span></label>
+        <input id="regEmail" name="email" type="email" placeholder="name@example.com" required aria-describedby="emailHelp" />
+        <label for="regDob">Date of Birth <span aria-hidden="true">*</span></label>
+        <input id="regDob" name="dob" type="date" required max="" aria-describedby="dobHelp" />
+        <label for="regRole">Role <span aria-hidden="true">*</span></label>
+        <select id="regRole" name="role" required aria-describedby="roleHelp">
+          <option value="" disabled selected>Select a role</option>
+          <option value="Administrator">Administrator</option>
+          <option value="Accounting Staff">Accounting Staff</option>
+          <option value="HR Staff">HR Staff</option>
+          <option value="Employee">Employee</option>
+        </select>
+        <fieldset>
+          <legend>Preferred Contact Method <span aria-hidden="true">*</span></legend>
+          <label><input type="radio" name="contactMethod" value="Email" required /> Email</label>
+          <label><input type="radio" name="contactMethod" value="Phone" /> Phone</label>
+        </fieldset>
+        <label for="regNewsletter">
+          <input id="regNewsletter" name="newsletter" type="checkbox" />
+          Subscribe to newsletter
+        </label>
+        <label for="regBio">Short Bio</label>
+        <textarea id="regBio" name="bio" rows="3" placeholder="Tell us about yourself..."></textarea>
+        <label for="regProfilePic">Profile Picture</label>
+        <input id="regProfilePic" name="profilePic" type="file" accept="image/*" aria-describedby="profilePicHelp" />
+        <input type="hidden" name="registrationTime" />
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-add">Register</button>
+          <button type="reset" class="btn btn-edit" id="registrationCancel">Cancel</button>
+        </div>
+        <div id="registrationFormMessage" class="form-message" aria-live="polite"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add/Edit Employee Modal -->
+  <div id="employeeFormModal" class="modal" aria-hidden="true">
+    <div class="modal-content card">
+      <h2 id="employeeFormTitle" class="card-title">Add Employee</h2>
+      <form id="employeeForm" autocomplete="off">
+        <label for="empId">Employee ID</label>
+        <input id="empId" type="text" placeholder="e.g. EMP001" required />
+        <label for="empName">Name</label>
+        <input id="empName" type="text" placeholder="Full Name" required />
+        <label for="empPosition">Position</label>
+        <input id="empPosition" type="text" placeholder="e.g. Foreman" required />
+        <label for="empRate">Rate</label>
+        <input id="empRate" type="text" placeholder="e.g. ₱650/day" required />
+        <label for="empBioId">Biometric ID</label>
+        <input id="empBioId" type="text" placeholder="Biometric ID" required />
+        <label for="empStatus">Status</label>
+        <select id="empStatus" required>
+          <option value="Active" selected>Active</option>
+          <option value="Inactive">Inactive</option>
+        </select>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-add">Save</button>
+          <button type="button" class="btn btn-edit" id="employeeFormCancel">Cancel</button>
+        </div>
+        <div id="employeeFormMessage" class="form-message"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Manage Position & Rate Modal -->
+  <div id="managePositionModal" class="modal" aria-hidden="true">
+    <div class="modal-content card">
+      <h2 class="card-title">Manage Positions & Rates</h2>
+      <form id="managePositionForm" autocomplete="off">
+        <label for="posName">Position Name</label>
+        <input id="posName" type="text" placeholder="e.g. Site Engineer" required />
+        <label for="posRate">Rate</label>
+        <input id="posRate" type="text" placeholder="e.g. ₱900/day" required />
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-add">Add / Update</button>
+          <button type="button" class="btn btn-edit" id="managePositionCancel">Cancel</button>
+        </div>
+        <div id="managePositionMessage" class="form-message"></div>
+      </form>
+    </div>
+  </div>
+</div>
